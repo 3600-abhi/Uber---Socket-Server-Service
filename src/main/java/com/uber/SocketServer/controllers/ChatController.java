@@ -7,11 +7,11 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 @Controller
-public class SocketController {
+public class ChatController {
 
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    public SocketController(SimpMessagingTemplate simpMessagingTemplate) {
+    public ChatController(SimpMessagingTemplate simpMessagingTemplate) {
         this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
@@ -42,13 +42,7 @@ public class SocketController {
 
     @MessageMapping("/privateChat")
     public void privateChat(PrivateChatDto privateChatDto) {
-        System.out.println("senderUid : " + privateChatDto.getSenderUid());
-        System.out.println("receiverUid : " + privateChatDto.getReceiverUid());
-        System.out.println("messageContent : " + privateChatDto.getMessageContent());
-
-
         String destination = "/topic/privateChat/" + privateChatDto.getReceiverUid();
-
         simpMessagingTemplate.convertAndSend(destination, privateChatDto);
     }
 }

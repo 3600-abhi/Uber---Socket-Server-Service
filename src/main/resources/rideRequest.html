@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdn.jsdelivr.net/sockjs/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+
+<body>
+
+
+
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+            connect();
+        });
+
+        var stompClient = null;
+
+
+        function connect() {
+            const socket = new SockJS("http://localhost:8080/ws");
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function () {
+                console.log("connected to server");
+
+                // ride request
+                const uid = getUid();
+                stompClient.subscribe(`/topic/rideRequest/${uid}`, function (data) {
+                    console.log("recieved ride request", data.body);
+                });
+            });
+        }
+
+        function getUid() {
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+            const uid = params.get("uid");
+            console.log("uid: ", uid);
+            return uid;
+        }
+
+
+
+    </script>
+
+</body>
+
+</html>
