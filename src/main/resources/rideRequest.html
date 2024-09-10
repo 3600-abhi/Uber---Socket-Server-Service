@@ -12,9 +12,7 @@
 
 <body>
 
-
-
-
+    <h1>Welcome to Ride Request</h1>
 
     <script>
 
@@ -35,7 +33,17 @@
                 // ride request
                 const uid = getUid();
                 stompClient.subscribe(`/topic/rideRequest/${uid}`, function (data) {
-                    console.log("recieved ride request", data.body);
+                    json = JSON.parse(data.body);
+                    console.log(json);
+                    const response = confirm(`you have a new ride request from passenger ${json.passengerId}, Do you want to accept ?`);
+
+                    if (response) {
+                        stompClient.send("/app/rideResponse", {}, JSON.stringify({
+                            driverId: uid,
+                            bookingId: json.bookingId
+                        }));
+                    }
+
                 });
             });
         }
