@@ -1,12 +1,13 @@
 package com.uber.SocketServer.controllers;
 
+import com.google.gson.Gson;
 import com.uber.SocketServer.api.BookingServiceApi;
 import com.uber.SocketServer.constant.AppConstant;
 import com.uber.SocketServer.constant.BookingStatus;
-import com.uber.SocketServer.dtos.DriverRideResponseDto;
-import com.uber.SocketServer.dtos.RideRequestDto;
-import com.uber.SocketServer.dtos.UpdateBookingDto;
+import com.uber.SocketServer.dtos.*;
+import com.uber.SocketServer.exception.AppException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ public class RideRequestController {
 
     @PostMapping(AppConstant.RAISE_RIDE_REQUEST)
     public void raiseRideRequest(@RequestBody RideRequestDto rideRequestDto) {
+        System.out.println("RideRequestDt ::: " + new Gson().toJson(rideRequestDto));
         sendRideRequestToDrivers(rideRequestDto);
     }
 
@@ -39,7 +41,18 @@ public class RideRequestController {
             for (Long driverId : rideRequestDto.getDriverIdList()) {
                 System.out.println("driverId = " + driverId);
                 String destination = "/topic/rideRequest/" + String.valueOf(driverId);
-                simpMessagingTemplate.convertAndSend(destination, rideRequestDto);
+
+                RideResponseDto rideResponseDto = RideResponseDto.builder()
+                                                                 .bookingId(rideRequestDto.getBookingId())
+                                                                 .passengerId(rideRequestDto.getPassengerId())
+                                                                 .driverId(driverId)
+                                                                 .startLocation(rideRequestDto.getStartLocation())
+                                                                 .endLocation(rideRequestDto.getEndLocation())
+                                                                 .build();
+
+                System.out.println("rideResponseDto :: " + new Gson().toJson(rideResponseDto));
+
+                simpMessagingTemplate.convertAndSend(destination, rideResponseDto);
             }
         }
     }
@@ -62,9 +75,25 @@ public class RideRequestController {
             if (resUpdateBooking.isSuccessful()) {
                 UpdateBookingDto updatedBooking = resUpdateBooking.body();
                 System.out.println(updatedBooking.getBookingStatus());
+
+                RideAcceptanceRequestDto rideAcceptanceRequestDto = RideAcceptanceRequestDto.builder()
+                                                                                            .passengerId(driverRideResponseDto.getPassengerId())
+                                                                                            .bookingId(driverRideResponseDto.getBookingId())
+                                                                                            .driverId(driverRideResponseDto.getDriverId())
+                                                                                            .build();
+
+                sendRideAcceptanceToPassenger(rideAcceptanceRequestDto);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AppException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public void sendRideAcceptanceToPassenger(RideAcceptanceRequestDto rideAcceptanceRequestDto) {
+        System.out.println("rideAcceptanceRequestDto :: " + new Gson().toJson(rideAcceptanceRequestDto));
+
+        System.out.println("Notifying Ride Acceptance to passengerId :: " + rideAcceptanceRequestDto.getPassengerId());
+        String destination = "/topic/sendRideRequestAcceptanceToPassenger/" + String.valueOf(rideAcceptanceRequestDto.getPassengerId());
+        simpMessagingTemplate.convertAndSend(destination, rideAcceptanceRequestDto);
     }
 }

@@ -4,11 +4,11 @@ import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class DriverRideResponseDto {
-    private Long driverId;
+public class RideAcceptanceRequestDto {
     private Long bookingId;
     private Long passengerId;
+    private Long driverId;
 }
